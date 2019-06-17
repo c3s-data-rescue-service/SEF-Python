@@ -14,17 +14,17 @@ with open(path.join(here, 'README.md')) as f:
 
 setup(
     name='SEF',
-    version='0.0.1',
+    version='0.2.0',
     description='Station Exchange Format',
 
     # From README - see above
     long_description=long_description,
     # long_description_content_type='text/x-rst',
 
-    url='https://brohan.org/SEF/',
+    url='https://github.com/C3S-Data-Rescue-Lot1-WP3/SEF-Python',
 
-    author='Philip Brohan',
-    author_email='philip.brohan@metofice.gov.uk',
+    author='Breno Melo',
+    author_email='bfmelo@fc.ul.pt',
 
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[
