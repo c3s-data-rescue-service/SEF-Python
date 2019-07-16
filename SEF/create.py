@@ -80,7 +80,12 @@ def create(records):
         }
 
     d = defaultdict(list)
+    UTC_OFFSET = temp_dict['offset']
+
     for i in range(len(temp_dict['Year'])):
+        local_datetime = datetime.datetime.strptime(str(temp_dict['Hour'][i]), "%H")
+        result_utc_datetime = local_datetime + datetime.timedelta(hours=UTC_OFFSET)
+        utc_time = result_utc_datetime.strftime("%H")
         temp_result = {
                     'Data': pandas.DataFrame({
                         'Year': temp_dict['Year'][i],
@@ -90,7 +95,7 @@ def create(records):
                         'Minute': temp_dict['Minute'][i],
                         'Period': temp_dict['Period'][i],
                         'Value': temp_dict['Value'][i],
-                        'Meta': temp_dict['Meta2'][i] + str(temp_dict['orig_time'][i])
+                        'Meta': temp_dict['Meta2'][i] + str(utc_time)
                     }, index=[0])
                 }
         d['Data'].append(temp_result['Data'])
