@@ -39,7 +39,7 @@ def read_file(file_name):
         raise IOError("%s does not look like a SEF file" % file_name)
     version = l.split('\t')[1]
     iversion = [int(x) for x in version.split('.')]
-    if iversion[0] > 0 or iversion[1] > 0:
+    if iversion[1] > 0 or iversion[2] > 0:
         raise IOError("SEF versions > 0.0 are not supported")
     result = {'SEF': version}
     # Read in the header rows
