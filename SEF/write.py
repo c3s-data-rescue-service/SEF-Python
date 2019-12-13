@@ -35,7 +35,7 @@ def write_file(obs, file_name):
     try:    
         version = obs['SEF']
         iversion = [int(x) for x in version.split('.')]
-        if iversion[0] > 0 or iversion[2] > 0:
+        if iversion[1] > 0 or iversion[2] > 0:
             raise IOError("SEF versions > 0.0 are not supported")
     except:
         raise ValueError("This does not look like a SEF data structure")
