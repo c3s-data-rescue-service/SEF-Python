@@ -13,6 +13,7 @@
 
 # Create an empty data structure corresponding to a Station Exchange 
 #   Format (SEF) file
+import datetime
 
 import pandas
 
@@ -55,10 +56,10 @@ def create(records):
 
    |
     """
-    version = '0.2.0'
+    version = '1.0.0'
 
     iversion = [int(x) for x in version.split('.')]
-    if iversion[0] > 0 or iversion[2] > 0:
+    if iversion[1] > 0 or iversion[2] > 0:
         raise IOError("SEF versions > 0.0 are not supported")
 
     temp_dict = {}
