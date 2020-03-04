@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Tutorial for the conversion of an Excel sheet into Station Exchange Format using the SEF-Python</title>
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+	
+	<style>
+		body{
+			margin-top: auto;
+			padding: 1em;
+			line-height: 30px;
+			font-size: 200%;
+			text-align: justify;
+			text-justify: inter-word;
+			font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+			font-size: 14px;
+			line-height: 1.42857143;
+			color: #333;
+			line-height: 30px;
+		}
+		
+		h1 .title{
+			font-size: 38px;
+		}
+		
+		ul li{
+			font-size: 25px;
+		}
+		
+		p {
+			margin-top: 25px;
+			margin-bottom:25px;
+			font-size: 20px;
+			line-height: 40px;
+		}
+		
+		img{
+			max-width: 100%;
+		}
+	</style>
+	
+  </head>
+  <body>
+    <div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				<h1 class="title">Tutorial for the conversion of an Excel sheet into Station Exchange Format using the SEF-Python</h1>
+				
+				<ul>
+					<li><a href="#introduction">Introduction</a></li>
+					<li><a href="#excel-file">Excel file</a></li>
+					<li><a href="#read-excel-file">Step 1: Read the Excel file into Python</a></li>
+					<li><a href="#step-2-prepare-the-metadata">Step 2: Prepare the metadata</a></li>
+					<li><a href="#step-3-prepare-the-header">Step 3: Prepare the SEF file header</a></li>
+					<li><a href="#step-4-add-time-and-date">Step 4: Add time and date</a></li>
+					<li><a href="#step-5-convert-temp">Step 5: Convert Fahrenheit to Celsius</a></li>
+					<li><a href="#step-6-write">Step 6: Write SEF files</a></li>
+				</ul>
+				<p><br /></p>
+				<center><img src="climate-change-service.png" /></center>
+				<div id="introduction">
+					<h2>Introduction</h2>
+					<p>
+						This page illustrates how to create a SEF file from climate data digitized in an Excel sheet. We will make use of the functions provided within the Python package <code>pandas</code> (version 0.23.4). Other packages are also used (all can be installed with the command <code>sudo apt-get install packagename</code>). 
+						The code described in this page can be downloaded <a href="https://github.com/C3S-Data-Rescue-Lot1-WP3/SEF-Python" target="_blank">here</a>.
+					</p>
+				</div>
+				<div id="excel-file">
+					<h2>Excel file</h2>
+					<p>
+						The Excel file (example.xls) that we want to convert into SEF looks like this:
+					</p>
+					<center><img src="input_file.jpg" /></center>
+					<p>
+						It contains daily observations of temperature (in Fahrenheit) for Detroit, MI (coordinates: 42°19'51.6"N 83°02'45.6"W) for the year 1781 made by George Christian Anthon.
+					</p>
+				</div>
+				<div id="read-excel-file">
+					<h2>Step 1: Read the Excel file into Python</h2>
+					<p>
+						There are many ways to read an Excel file into Python. In this example we are using <code>pandas</code> to firstly create a Dataframe <code>dfs</code>. After that all rows from Dataframe will be iterabled to create a list of dictionaries Python.
+					</p>
+					
+					<p>
+						<pre>import pandas as pd
+
+def import_excel(input_file_path):
+    dfs = pd.read_excel(input_file_path, skiprows=1)
+    dfs = dfs.fillna('')
+    records = [dict(row[1]) for row in dfs.iterrows()] # iterrow to create a list of dictionaries
+    record = []
+    for record_id in records:
+        record.append(record_id)
+
+    return records</pre>
+					<p>Please, note that <code>pandas</code> read the columns <b>07:00:00 AM</b>, <b>12:00:00 PM</b> and <b>20:00:00 PM</b> as <b>datetime.time(7, 0)</b>, <b>datetime.time(12, 0)</b> and <b>datetime.time(20, 0)</b>. This will create a list that looks like this:</p>
+					<p>
+						<pre><code>[<br /> {'Year': 1781, 'Month': 8, 'Day': 1, datetime.time(7, 0): 70.0, datetime.time(12, 0): 79.0, datetime.time(20, 0): 73.0}, <br /> {'Year': 1781, 'Month': 8, 'Day': 2, datetime.time(7, 0): 75.0, datetime.time(12, 0): 84.0, datetime.time(20, 0): 77.0},<br /> {'Year': 1781, 'Month': 8, 'Day': 3, datetime.time(7, 0): 74.0, datetime.time(12, 0): 76.0, datetime.time(20, 0): 75.0}, <br />]
+							</code>
+						</pre>
+					</p>
+					<p>Note that empty cells are read as <code>NA</code> (missing value).</p>
+				</div>
+				<div id="step-2-prepare-the-metadata">
+					<h2>Step 2: Prepare the metadata</h2>
+					<p>
+						Metadata are as important as the data themselves. Some metadata are required in SEF files, such as station name, geographical coordinates, units, variable and statistic code.
+					</p>
+					<p>
+						Coordinates in particular is where mistakes are introduced more often during data manipulation. The most common mistake arises from the conversion from degrees-minutes-seconds to decimal format. SEF files require the coordinates to be in decimal format (and the altitude in meters). We create three variables that contain the coordinates in the correct format:
+						<pre><strong>latitude</strong> = 42.331 <br /><strong>longitude</strong> = -83.046<br /><strong>altitude</strong> = 'NA'
+						</pre>
+					</p>
+					
+				</div>
+				<div id="step-3-prepare-the-header">
+					<h2>Step 3: Prepare the SEF file header</h2>
+					<p>
+						The header of the file gets the initial information about SEF file. The <code><strong>header</strong></code> is a dictionary with some keys and value corresponding. This will be a dictionary that looks like this:
+					</p>
+					<p>
+						<pre><strong>header</strong> = {
+        'SEF': version, 'ID': 'Detroit_Anthon', 'Name': 'Detroit, MI',
+        'Lat': latitude, 'Lon': longitude, 'Alt': altitude, 'Source': 'C3S-DRS',
+        'Link': '', 'Vbl': 'ta', 'Stat': 'point',
+        'Units': 'C', 'Meta': 'Observer=George Christian Anthon',
+    }
+						</pre>
+					</p>
+					<p>Note that this is the main dictionary where the <code>temp_dict</code> variable will be appended to it (<a href="#step-6-write">Step 6</a>).</p>					
+				</div>
+				<div id="step-4-add-time-and-date">
+					<h2>Step 4: Add time and date</h2>
+					<p>We need to convert the observation time to UTC time. So we use the following code to convert it and then set the format <code>YYYY-MM-DD HH:MM:SS</code> for the <code>date_time</code> variable.</p>
+					<pre><strong>time_offset</strong> = longitude * 12 / 180<br /><strong>date</strong> = str(records[index]['Year']) \
+                + "-" + str(records[index]['Month']) \
+                + "-" + str(records[index]['Day']) \
+                + " " + str(times[index_times])<br /><strong>date_time</strong> = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')<br /><strong>utc</strong> = date_time - datetime.timedelta(hours=time_offset)
+				
+<strong>//input:</strong> 1781-8-1 07:00:00				
+<strong>//output:</strong> 1781-08-01 12:32:11				
+				</pre>
+				<p>
+					The <code>utc</code> variable is <code>datetime.datetime</code> object. To get the <code>year</code>, <code>month</code>, <code>day</code>, <code>hour</code> and <code>minutes</code> variables we need to convert it to <code>str</code>:
+				</p>			
+				<pre><strong>year</strong> = str(utc)[:4]
+<strong>month</strong> = str(utc)[5:7]
+<strong>day</strong> = str(utc)[8:10]
+<strong>hour</strong> = str(utc)[11:13]
+<strong>minutes</strong> = str(utc)[14:16]</pre>
+				</div>
+				<div id="step-5-convert-temp">
+					<h2>Step 5: Convert Fahrenheit to Celsius</h2>
+					<p>It is recommended to convert the data into metric units. This can be done easily with the following commands:</p>
+					<pre>temperatures = []<br/ >if isinstance(temperatures[index_temperatures], str):
+    value = 'NA'
+else:
+    value = round(((float(temperatures[index_temperatures]) - 32) * 5 / 9), 1)</pre>
+					<p>Some values can be <code>NA</code>, so we must to verify if the value exists before to perform the conversion.</p>
+				</div>
+				
+				<div id="step-6-write">
+					<h2>Step 6: Write SEF files</h2>
+					<p>The two following <code>for</code> loop will create the lines of Meta table:</p>
+					<pre>    
+    times = [datetime.time(7, 0), datetime.time(12, 0), datetime.time(20, 0)]
+    original_time = ["7:00AM", "12:00PM", "20:00PM"]
+
+    <strong>for</strong> index in range(len(records)):
+        temperatures.append(records[index][datetime.time(7, 0)])
+        temperatures.append(records[index][datetime.time(12, 0)])
+        temperatures.append(records[index][datetime.time(20, 0)])
+        <strong>for</strong> time in original_time:
+            if isinstance(temperatures[index_temperatures], str):
+                value = 'NA'
+            else:
+                value = round(((float(temperatures[index_temperatures]) - 32) * 5 / 9), 1)
+
+            date = str(records[index]['Year']) \
+                + "-" + str(records[index]['Month']) \
+                + "-" + str(records[index]['Day']) \
+                + " " + str(times[index_times])
+
+            date_time = datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
+
+            utc = date_time - datetime.timedelta(hours=time_offset)
+
+            year = str(utc)[:4]
+            month = str(utc)[5:7]
+            day = str(utc)[8:10]
+            hour = str(utc)[11:13]
+            minutes = str(utc)[14:16]
+
+            data_dict = {
+                'Data': pd.DataFrame({
+                    'Year': year,
+                    'Month': month,
+                    'Day': day,
+                    'Hour': hour,
+                    'Minute': minutes,
+                    'Period': 0,
+                    'Value': value,
+                    'Meta': "orig=" + str(temperatures[index_temperatures])
+                            + 'F' + "|orig.time=" + str(time)
+                            + "|orig.date=" + str(records[index]['Year']) + '-' + str(records[index]['Month'])
+                            + '-' + str(records[index]['Day'])
+
+                }, index=[0])
+            }
+            temp_dict['Data'].append(data_dict['Data'])
+
+            index_times += 1
+            if index_times > 2:
+                index_times = 0
+
+            index_temperatures += 1
+
+        header.update(temp_dict)</pre>
+				<p>The resulting SEF files should look like this:</p>
+				<center><img src="output_file.jpg" /></center>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha384-nvAa0+6Qg9clwYCGGPpDQLVpLNn0fRaROjHqs13t4Ggj3Ez50XnGQqc/r8MhnRDZ" crossorigin="anonymous"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+  </body>
+</html>
