@@ -14,7 +14,7 @@ with open(path.join(here, 'README.md')) as f:
 
 setup(
     name='SEF',
-    version='0.2.0',
+    version='1.0.0',
     description='Station Exchange Format',
 
     # From README - see above
@@ -47,6 +47,7 @@ setup(
     # Other packages that your project depends on.
     install_requires=[
         'pandas>=0.23.4',
+        'xlrd==1.1.0',
     ],
 
 
