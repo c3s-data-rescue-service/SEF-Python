@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Tutorial for the conversion of an Excel sheet into Station Exchange Format using the SEF-Python</title>
+    <title>Tutorial for the conversion of an Excel sheet into Station Exchange Format using Python</title>
 
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
@@ -57,7 +57,7 @@
     <div class="container">
 		<div class="row">
 			<div class="col-md-12">
-				<h1 class="title">Tutorial for the conversion of an Excel sheet into Station Exchange Format using the SEF-Python</h1>
+				<h1 class="title">Tutorial for the conversion of an Excel sheet into Station Exchange Format using Python</h1>
 				
 				<ul>
 					<li><a href="#introduction">Introduction</a></li>
@@ -68,6 +68,7 @@
 					<li><a href="#step-4-add-time-and-date">Step 4: Add time and date</a></li>
 					<li><a href="#step-5-convert-temp">Step 5: Convert Fahrenheit to Celsius</a></li>
 					<li><a href="#step-6-write">Step 6: Write SEF files</a></li>
+					<li><a href="#step-6-1-write">Step 6.1: The write_file function</a></li>
 				</ul>
 				<p><br /></p>
 				<center><img src="climate-change-service.png" /></center>
@@ -75,13 +76,13 @@
 					<h2>Introduction</h2>
 					<p>
 						This page illustrates how to create a SEF file from climate data digitized in an Excel sheet. We will make use of the functions provided within the Python package <code>pandas</code> (version 0.23.4). Other packages are also used (all can be installed with the command <code>sudo apt-get install packagename</code>). 
-						The code described in this page can be downloaded <a href="https://github.com/C3S-Data-Rescue-Lot1-WP3/SEF-Python" target="_blank">here</a>.
+						The project can be downloaded <a href="https://github.com/C3S-Data-Rescue-Lot1-WP3/SEF-Python/blob/master/SEF_Pandas/tutorial.py" target="_blank">here</a>.
 					</p>
 				</div>
 				<div id="excel-file">
 					<h2>Excel file</h2>
 					<p>
-						The Excel file (<a href="https://github.com/C3S-Data-Rescue-Lot1-WP3/SEF-Python/blob/master/docs/example.xls?raw=true" target="_blank">example.xls</a>) that we want to convert into SEF looks like this:
+						The Excel file (example.xls) that we want to convert into SEF looks like this:
 					</p>
 					<center><img src="input_file.jpg" /></center>
 					<p>
@@ -98,15 +99,24 @@
 						<pre>import pandas as pd
 
 def import_excel(input_file_path):
+"""Import the Excel file as input file
+
+Args:
+	:param input_file_path: Path of input file
+
+Returns:
+	records (:obj:'list'): List of dict
+"""
+	
     dfs = pd.read_excel(input_file_path, skiprows=1)
     dfs = dfs.fillna('')
-    records = [dict(row[1]) for row in dfs.iterrows()] # iterrow to create a list of dictionaries
+    records = [dict(row[1]) for row in dfs.iterrows()] # iterrows to create a list of dictionaries
     record = []
     for record_id in records:
         record.append(record_id)
 
     return records</pre>
-					<p>Please, note that <code>pandas</code> read the columns <b>07:00:00 AM</b>, <b>12:00:00 PM</b> and <b>20:00:00 PM</b> as <b>datetime.time(7, 0)</b>, <b>datetime.time(12, 0)</b> and <b>datetime.time(20, 0)</b>. This will create a list that looks like this:</p>
+					<p>Please, note that <code>pandas</code> read the columns <b>07:00:00 AM</b>, <b>12:00:00 PM</b> and <b>20:00:00 PM</b> as <b>datetime.time(7, 0)</b>, <b>datetime.time(12, 0)</b> and <b>datetime.time(20, 0)</b>, respectively. This will create a list that looks like this:</p>
 					<p>
 						<pre><code>[<br /> {'Year': 1781, 'Month': 8, 'Day': 1, datetime.time(7, 0): 70.0, datetime.time(12, 0): 79.0, datetime.time(20, 0): 73.0}, <br /> {'Year': 1781, 'Month': 8, 'Day': 2, datetime.time(7, 0): 75.0, datetime.time(12, 0): 84.0, datetime.time(20, 0): 77.0},<br /> {'Year': 1781, 'Month': 8, 'Day': 3, datetime.time(7, 0): 74.0, datetime.time(12, 0): 76.0, datetime.time(20, 0): 75.0}, <br />]
 							</code>
@@ -121,13 +131,20 @@ def import_excel(input_file_path):
 					</p>
 					<p>
 						Coordinates in particular is where mistakes are introduced more often during data manipulation. The most common mistake arises from the conversion from degrees-minutes-seconds to decimal format. SEF files require the coordinates to be in decimal format (and the altitude in meters). We create three variables that contain the coordinates in the correct format:
-						<pre><strong>latitude</strong> = 42.331 <br /><strong>longitude</strong> = -83.046<br /><strong>altitude</strong> = 'NA'
+						<pre><strong>latitude</strong> = round(42 + 19 / 60 + 51.6 / 3600, 4) <br /><strong>longitude</strong> = round(-(83 + 2 / 60 + 45.6 / 3600), 4)<br /><strong>altitude</strong> = 'NA'
 						</pre>
 					</p>
 					
 				</div>
 				<div id="step-3-prepare-the-header">
 					<h2>Step 3: Prepare the SEF file header</h2>
+					<p>Before to prepare the header, we need to define the version of SEF:</p>
+					<pre>
+<strong>version</strong> = '1.0.0'
+
+<strong>iversion</strong> = [int(x) for x in version.split('.')]
+if iversion[1] > 0 or iversion[2] > 0:
+	raise IOError("SEF versions > 0.0 are not supported")</pre>
 					<p>
 						The header of the file gets the initial information about SEF file. The <code><strong>header</strong></code> is a dictionary with some keys and value corresponding. This will be a dictionary that looks like this:
 					</p>
@@ -229,6 +246,64 @@ else:
             index_temperatures += 1
 
         header.update(temp_dict)</pre>
+				</div>
+				<div id="step-6-1-write">
+				<h2>Step 6.1: The write_file function</h2>
+				<p>
+				The <code>header</code> will be processed by this function to be written to the output file in which the table's columns are defined:
+				</p>
+				<pre>
+def write_file(obs, file_name):
+    """Write the specified set of obs to a file in SEF format.
+
+    Args:
+        obs (:obj: 'dict'): Dictionary
+        file_name (:obj:'str'): File (or 'open'able object)
+
+    Returns:
+        :obj:'dict': Data as key:value pairs.
+
+    Raises:
+        ValueError: obs not a SEF structure
+    """
+    try:
+        version = obs['SEF']
+        iversion = [int(x) for x in version.split('.')]
+
+        if iversion[1] > 0 or iversion[2] > 0:
+            raise IOError("SEF versions > 0.0 are not supported")
+    except:
+        raise ValueError("This does not look like a SEF data structure")
+
+    # Operate on local copy
+    obs = copy.deepcopy(obs)
+    f = codecs.open(file_name, 'w', encoding='utf-8')
+    # Meta might need packing
+    obs['Meta'] = _pack(obs['Meta'])
+    # Header first
+    for header in ('SEF', 'ID', 'Name', 'Source', 'Lat', 'Lon', 'Alt', 'Link', 'Vbl',
+                   'Stat', 'Units', 'Meta'):
+        if obs[header] is not None and obs[header] == obs[header]:
+
+            f.write("%s\t%s\n" % (header, obs[header]))
+        else:
+            f.write("%s\t\n" % header)
+
+    obs['Data'][0].to_csv(f, sep='\t', header=True, index=False)
+
+    for i in range(1, len(obs['Data'])):
+        obs['Data'][i].to_csv(f, sep='\t', header=False, index=False,)
+
+
+def _pack(m_list):
+    if m_list is None:
+        return m_list
+    elif isinstance(m_list, str):
+        return m_list
+    else:
+        return ','.join(m_list)
+				</pre>
+				
 				<p>The resulting SEF files should look like this:</p>
 				<center><img src="output_file.jpg" /></center>
 				</div>
