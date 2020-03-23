@@ -1,5 +1,4 @@
-# SEF
-Station Exchange Format library and specification
+Station Exchange Format library for Python
 
 ### Contributors
 
